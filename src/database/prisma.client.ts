@@ -1,13 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { config } from '@config/app.config';
 
-// Prevent multiple PrismaClient instances in development (hot reload creates new instances)
-declare global {
-  var __prisma: PrismaClient | undefined;
-}
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
 export const prisma: PrismaClient =
-  global.__prisma ??
+  globalForPrisma.prisma ??
   new PrismaClient({
     log: config.isDevelopment
       ? ['query', 'info', 'warn', 'error']
@@ -15,5 +14,5 @@ export const prisma: PrismaClient =
   });
 
 if (config.isDevelopment) {
-  global.__prisma = prisma;
+  globalForPrisma.prisma = prisma;
 }
