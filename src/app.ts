@@ -6,6 +6,9 @@ import rateLimit from 'express-rate-limit';
 import { config } from '@config/app.config';
 import { errorMiddleware } from '@common/middleware/error.middleware';
 import authRoutes from '@modules/auth/auth.routes';
+import organizationRoutes from '@modules/organizations/organizations.routes';
+import userRoutes from '@modules/users/users.routes';
+import leadsRoutes from '@modules/leads/leads.routes';
 
 const app: Application = express();
 
@@ -53,6 +56,9 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 app.use('/api/v1/auth', authLimiter, authRoutes);
+app.use('/api/v1/leads', leadsRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/organizations', organizationRoutes);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Route not found' });
