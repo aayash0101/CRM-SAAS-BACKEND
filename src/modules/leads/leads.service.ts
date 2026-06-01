@@ -53,7 +53,6 @@ export class LeadsService {
     const lead = await leadsRepository.findByIdAndOrg(id, organizationId);
     if (!lead) throw new AppError('Lead not found', 404);
 
-    // SALES_REP can only view their own leads
     if (callerRole === 'SALES_REP' && lead.assignedUserId !== callerId) {
       throw new AppError('You do not have permission to view this lead', 403);
     }
@@ -91,7 +90,6 @@ export class LeadsService {
     const lead = await leadsRepository.findByIdAndOrg(id, organizationId);
     if (!lead) throw new AppError('Lead not found', 404);
 
-    // Only ORG_ADMIN and SALES_MANAGER can delete leads
     if (callerRole === 'SALES_REP') {
       throw new AppError('You do not have permission to delete leads', 403);
     }
