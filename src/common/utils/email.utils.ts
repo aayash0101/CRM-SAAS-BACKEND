@@ -10,15 +10,28 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+
+export const sendEmail = async (options: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> => {
+  await transporter.sendMail({
+    from: config.email.from,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+  });
+};
+
+
 export const sendVerificationEmail = async (
   to: string,
   firstName: string,
   token: string
 ): Promise<void> => {
   const verificationUrl = `${config.frontend.url}/verify-email?token=${token}`;
-
-  await transporter.sendMail({
-    from: config.email.from,
+  await sendEmail({
     to,
     subject: 'Verify your email — CRM SaaS',
     html: `
@@ -43,9 +56,7 @@ export const sendPasswordResetEmail = async (
   token: string
 ): Promise<void> => {
   const resetUrl = `${config.frontend.url}/reset-password?token=${token}`;
-
-  await transporter.sendMail({
-    from: config.email.from,
+  await sendEmail({
     to,
     subject: 'Reset your password — CRM SaaS',
     html: `
