@@ -5,3 +5,338 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  SALES_MANAGER
+  SALES_REP
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  LOST
+}
+
+enum LeadSource {
+  WEBSITE
+  REFERRAL
+  SOCIAL_MEDIA
+  EMAIL_CAMPAIGN
+  COLD_CALL
+  TRADE_SHOW
+  OTHER
+}
+
+enum DealStage {
+  PROSPECT
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  EMAIL
+  TASK
+}
+
+enum ActivityStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  CANCELLED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  INVITE
+  SUSPEND
+  ACTIVATE
+}
+
+
+model Organization {
+  id          String             @id @default(uuid())
+  name        String
+  slug        String             @unique  // used in URLs e.g. /org/acme-corp
+  email       String             @unique  // primary contact email
+  phone       String?
+  website     String?
+  logoUrl     String?
+  address     String?
+  city        String?
+  country     String?
+  status      OrganizationStatus @default(ACTIVE)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  // Relations
+  users        User[]
+  leads        Lead[]
+  customers    Customer[]
+  deals        Deal[]
+  activities   Activity[]
+  invitations  Invitation[]
+  auditLogs    AuditLog[]
+  subscription Subscription?
+
+  @@map("organizations")
+}
+
+
+model User {
+  id                     String     @id @default(uuid())
+  organizationId         String
+  firstName              String
+  lastName               String
+  email                  String
+  password               String
+  role                   UserRole   @default(SALES_REP)
+  status                 UserStatus @default(ACTIVE)
+  avatarUrl              String?
+  emailVerified          Boolean    @default(false)
+  emailVerificationToken String?
+  passwordResetToken     String?
+  passwordResetExpiresAt DateTime?
+  lastLoginAt            DateTime?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedLeads Lead[]       @relation("AssignedLeads")
+  ownedDeals    Deal[]       @relation("OwnedDeals")
+  activities    Activity[]
+  auditLogs     AuditLog[]
+  sentInvitations Invitation[] @relation("InvitedBy")
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+  @@index([email])
+  @@map("users")
+}
+
+
+model Subscription {
+  id             String             @id @default(uuid())
+  organizationId String             @unique
+  plan           SubscriptionPlan   @default(FREE)
+  status         SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+model Lead {
+  id             String     @id @default(uuid())
+  organizationId String
+  assignedUserId String?
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  company        String?
+  source         LeadSource @default(OTHER)
+  status         LeadStatus @default(NEW)
+  notes          String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedUser User?        @relation("AssignedLeads", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  activities   Activity[]
+
+  @@index([organizationId])
+  @@index([assignedUserId])
+  @@index([status])
+  @@map("leads")
+}
+
+model Customer {
+  id             String   @id @default(uuid())
+  organizationId String
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  company        String?
+  address        String?
+  city           String?
+  country        String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deals        Deal[]
+  activities   Activity[]
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("customers")
+}
+
+
+model Deal {
+  id             String    @id @default(uuid())
+  organizationId String
+  customerId     String
+  ownerId        String
+  title          String
+  value          Decimal   @default(0) @db.Decimal(15, 2)
+  stage          DealStage @default(PROSPECT)
+  expectedCloseDate DateTime?
+  closedAt       DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer     Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  owner        User         @relation("OwnedDeals", fields: [ownerId], references: [id], onDelete: Cascade)
+  activities   Activity[]
+  history      DealHistory[]
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([ownerId])
+  @@index([stage])
+  @@map("deals")
+}
+
+
+model DealHistory {
+  id         String    @id @default(uuid())
+  dealId     String
+  fromStage  DealStage?
+  toStage    DealStage
+  changedAt  DateTime  @default(now())
+  note       String?
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@map("deal_history")
+}
+
+
+model Activity {
+  id             String         @id @default(uuid())
+  organizationId String
+  userId         String
+  leadId         String?
+  customerId     String?
+  dealId         String?
+  type           ActivityType
+  status         ActivityStatus @default(SCHEDULED)
+  title          String
+  description    String?
+  dueAt          DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lead         Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  deal         Deal?        @relation(fields: [dealId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([leadId])
+  @@index([customerId])
+  @@index([dealId])
+  @@map("activities")
+}
+
+
+model Invitation {
+  id             String           @id @default(uuid())
+  organizationId String
+  invitedById    String
+  email          String
+  role           UserRole         @default(SALES_REP)
+  status         InvitationStatus @default(PENDING)
+  token          String           @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User         @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([token])
+  @@index([email])
+  @@map("invitations")
+}
+
+model AuditLog {
+  id             String      @id @default(uuid())
+  organizationId String
+  userId         String?
+  action         AuditAction
+  entity         String      // e.g. "Lead", "Deal", "User"
+  entityId       String?     // the ID of the affected record
+  metadata       Json?       // any extra context (old values, new values, IP)
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
