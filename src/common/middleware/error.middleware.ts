@@ -17,9 +17,9 @@ export class AppError extends Error {
 
 export const errorMiddleware = (
   err: Error,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   // Zod validation errors — bad request shape
   if (err instanceof ZodError) {
