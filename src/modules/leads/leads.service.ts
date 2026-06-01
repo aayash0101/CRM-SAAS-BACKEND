@@ -84,7 +84,7 @@ export class LeadsService {
     async deleteLead(
         id: string,
         organizationId: string,
-        _callerId: string,      // ← underscore prefix tells TS this is intentionally unused
+        _callerId: string,      
         callerRole: CallerRole
     ) {
         const lead = await leadsRepository.findByIdAndOrg(id, organizationId);
