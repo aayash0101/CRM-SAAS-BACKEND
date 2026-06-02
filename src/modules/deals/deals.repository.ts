@@ -138,8 +138,6 @@ export class DealsRepository {
     });
   }
 
-  // ── Pipeline & Stats ───────────────────────────────────────────────────────
-
   async getPipelineByOrg(organizationId: string) {
     return prisma.deal.groupBy({
       by: ['stage'],
