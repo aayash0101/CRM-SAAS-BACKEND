@@ -12,6 +12,7 @@ import leadsRoutes from '@modules/leads/leads.routes';
 import customersRoutes from '@modules/customers/customers.routes';
 import dealsRoutes from '@modules/deals/deals.routes';
 import activitiesRoutes from '@modules/activities/activities.routes';
+import dashboardRoutes from '@modules/dashboard/dashboard.routes';
 
 const app: Application = express();
 
@@ -65,6 +66,7 @@ app.use('/api/v1/organizations', organizationRoutes);
 app.use('/api/v1/customers', customersRoutes);
 app.use('/api/v1/deals', dealsRoutes);
 app.use('/api/v1/activities', activitiesRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
 
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ success: false, message: 'Route not found' });
