@@ -19,7 +19,6 @@ export class ActivitiesService {
     callerRole: CallerRole,
     input: CreateActivityInput
   ) {
-    // Verify that at least one linked entity exists
     const linkedEntities = {
       lead: input.leadId ? await leadsRepository.findByIdAndOrg(input.leadId, organizationId) : null,
       customer: input.customerId
@@ -50,7 +49,6 @@ export class ActivitiesService {
       }
     }
 
-    // Convert dueAt to Date if it's a string
     const dueAt =
       typeof input.dueAt === 'string' ? new Date(input.dueAt) : input.dueAt;
 
@@ -75,13 +73,10 @@ export class ActivitiesService {
     callerRole: CallerRole,
     filters: ActivityFiltersInput
   ) {
-    // SALES_REP can only see their own activities or those linked to their resources
     let scopedFilters = filters;
 
     if (callerRole === 'SALES_REP') {
-      // For SALES_REP, we need to do post-filtering because we can't easily query
-      // activities by linked resource ownership. For simplicity, we scope to their own activities.
-      // In production, this might need a more sophisticated query.
+      
       scopedFilters = { ...filters, userId: callerId };
     }
 
@@ -138,12 +133,10 @@ export class ActivitiesService {
     const activity = await activitiesRepository.findByIdAndOrg(id, organizationId);
     if (!activity) throw new AppError('Activity not found', 404);
 
-    // Check permissions - only creator or manager+ can update
     if (callerRole === 'SALES_REP' && activity.userId !== callerId) {
       throw new AppError('You do not have permission to update this activity', 403);
     }
 
-    // If updating linked entities, verify they exist
     if (input.leadId !== undefined || input.customerId !== undefined || input.dealId !== undefined) {
       const newLead = input.leadId
         ? await leadsRepository.findByIdAndOrg(input.leadId, organizationId)
@@ -155,7 +148,6 @@ export class ActivitiesService {
         ? await dealsRepository.findByIdAndOrg(input.dealId, organizationId)
         : null;
 
-      // Keep existing values if not being updated
       const finalLead = input.leadId !== undefined ? newLead : activity.lead;
       const finalCustomer = input.customerId !== undefined ? newCustomer : activity.customer;
       const finalDeal = input.dealId !== undefined ? newDeal : activity.deal;
@@ -170,7 +162,6 @@ export class ActivitiesService {
 
     const updateData: any = { ...input };
 
-    // Convert dueAt to Date if it's a string
     if (updateData.dueAt && typeof updateData.dueAt === 'string') {
       updateData.dueAt = new Date(updateData.dueAt);
     }
@@ -189,16 +180,14 @@ export class ActivitiesService {
     const activity = await activitiesRepository.findByIdAndOrg(id, organizationId);
     if (!activity) throw new AppError('Activity not found', 404);
 
-    // Check permissions
     if (callerRole === 'SALES_REP' && activity.userId !== callerId) {
       throw new AppError('You do not have permission to update this activity', 403);
     }
 
-    // Validate status transitions
     const validTransitions: Record<string, string[]> = {
       SCHEDULED: ['COMPLETED', 'CANCELLED'],
-      COMPLETED: [], // Cannot transition from COMPLETED
-      CANCELLED: [], // Cannot transition from CANCELLED
+      COMPLETED: [], 
+      CANCELLED: [],
     };
 
     if (!validTransitions[activity.status]?.includes(input.status)) {
@@ -208,7 +197,6 @@ export class ActivitiesService {
       );
     }
 
-    // Set completedAt if transitioning to COMPLETED
     const completedAt = input.status === 'COMPLETED' ? new Date() : null;
 
     const updated = await activitiesRepository.update(id, {
@@ -228,12 +216,10 @@ export class ActivitiesService {
     const activity = await activitiesRepository.findByIdAndOrg(id, organizationId);
     if (!activity) throw new AppError('Activity not found', 404);
 
-    // SALES_REP can only delete their own activities
     if (callerRole === 'SALES_REP') {
       throw new AppError('You do not have permission to delete activities', 403);
     }
 
-    // MANAGER+ can delete
     await activitiesRepository.delete(id);
   }
 
