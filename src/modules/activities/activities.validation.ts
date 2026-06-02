@@ -30,7 +30,6 @@ export const updateActivitySchema = z.object({
   dealId: z.string().uuid('Invalid deal ID').optional().nullable(),
 }).refine(
   (data) => {
-    // At least one of leadId, customerId, dealId must be present if updating
     if (data.leadId !== undefined || data.customerId !== undefined || data.dealId !== undefined) {
       return data.leadId || data.customerId || data.dealId;
     }
