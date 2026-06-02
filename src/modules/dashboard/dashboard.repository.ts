@@ -1,12 +1,10 @@
 import { prisma } from '@database/prisma.client';
 
 export class DashboardRepository {
-  // ==================== COUNTS ====================
 
   async getTotalLeads(organizationId: string, userId?: string, role?: string) {
     const where: any = { organizationId };
 
-    // SALES_REP sees only assigned leads
     if (role === 'SALES_REP' && userId) {
       where.assignedUserId = userId;
     }
@@ -24,7 +22,6 @@ export class DashboardRepository {
       stage: { not: 'WON' },
     };
 
-    // SALES_REP sees only their owned deals
     if (role === 'SALES_REP' && userId) {
       where.ownerId = userId;
     }
@@ -32,15 +29,12 @@ export class DashboardRepository {
     return prisma.deal.count({ where });
   }
 
-  // ==================== PIPELINE VALUE ====================
-
   async getPipelineValue(organizationId: string, userId?: string, role?: string) {
     const where: any = {
       organizationId,
       stage: { not: 'WON' },
     };
 
-    // SALES_REP sees only their owned deals
     if (role === 'SALES_REP' && userId) {
       where.ownerId = userId;
     }
@@ -53,7 +47,6 @@ export class DashboardRepository {
     return result._sum.value || 0;
   }
 
-  // ==================== STATS ====================
 
   async getLeadStats(organizationId: string, userId?: string, role?: string) {
     const where: any = { organizationId };
@@ -140,7 +133,6 @@ export class DashboardRepository {
     return result;
   }
 
-  // ==================== RECENT DATA ====================
 
   async getRecentActivities(
     organizationId: string,
@@ -251,7 +243,6 @@ export class DashboardRepository {
     });
   }
 
-  // ==================== SALES PERFORMANCE ====================
 
   async getSalesPerformance(organizationId: string, userId?: string, role?: string) {
     const where: any = { organizationId };
@@ -259,8 +250,7 @@ export class DashboardRepository {
     if (role === 'SALES_REP' && userId) {
       where.ownerId = userId;
     } else if (role === 'SALES_MANAGER' && userId) {
-      // Managers see their team's performance - would need team logic
-      // For now, just their own
+    
       where.ownerId = userId;
     }
 
@@ -278,9 +268,7 @@ export class DashboardRepository {
       },
     });
 
-    // Return individual stats for SALES_REP only
     if (role === 'SALES_REP') {
-      // For individual, calculate their stats
       const wonDeals = deals.filter((d) => d.stage === 'WON');
       const wonValue = wonDeals.reduce((sum, d) => sum + d.value.toNumber(), 0);
       const wonCount = wonDeals.length;
@@ -302,7 +290,6 @@ export class DashboardRepository {
       ];
     }
 
-    // For managers/org, group by owner
     const grouped: Record<string, any> = {};
 
     for (const deal of deals) {
@@ -342,7 +329,6 @@ export class DashboardRepository {
     return result.sort((a, b) => b.wonValue - a.wonValue);
   }
 
-  // ==================== OVERVIEW SUMMARY ====================
 
   async getOverviewData(organizationId: string, userId?: string, role?: string) {
     const [totalLeads, totalCustomers, openDeals, pipelineValue, leadStats, dealStats, activityStats] =
