@@ -5,14 +5,11 @@ type CallerRole = string;
 
 export class DashboardService {
   async getOverview(organizationId: string, callerId: string, callerRole: CallerRole) {
-    // All authenticated users can view dashboard, but data is scoped
     if (callerRole === 'SALES_REP') {
       return dashboardRepository.getOverviewData(organizationId, callerId, callerRole);
     } else if (callerRole === 'SALES_MANAGER' || callerRole === 'ORG_ADMIN') {
-      // Managers see organization-wide data
       return dashboardRepository.getOverviewData(organizationId, callerId, callerRole);
     } else if (callerRole === 'SUPER_ADMIN') {
-      // Admin sees all data
       return dashboardRepository.getOverviewData(organizationId, undefined, callerRole);
     }
 
@@ -25,7 +22,6 @@ export class DashboardService {
     callerRole: CallerRole,
     limit: number = 10
   ) {
-    // Limit to reasonable value
     const finalLimit = Math.min(Math.max(limit, 1), 50);
 
     if (callerRole === 'SALES_REP') {
@@ -55,7 +51,6 @@ export class DashboardService {
     callerRole: CallerRole,
     limit: number = 10
   ) {
-    // Limit to reasonable value
     const finalLimit = Math.min(Math.max(limit, 1), 50);
 
     if (callerRole === 'SALES_REP') {
@@ -84,14 +79,11 @@ export class DashboardService {
     callerId: string,
     callerRole: CallerRole
   ) {
-    // SALES_REP can only see their own performance
     if (callerRole === 'SALES_REP') {
       return dashboardRepository.getSalesPerformance(organizationId, callerId, callerRole);
     } else if (callerRole === 'SALES_MANAGER' || callerRole === 'ORG_ADMIN') {
-      // Managers can see their team's performance
       return dashboardRepository.getSalesPerformance(organizationId, callerId, callerRole);
     } else if (callerRole === 'SUPER_ADMIN') {
-      // Admin sees all performance data
       return dashboardRepository.getSalesPerformance(organizationId, undefined, callerRole);
     }
 
