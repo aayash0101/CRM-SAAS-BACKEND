@@ -247,10 +247,8 @@ export class DashboardRepository {
   async getSalesPerformance(organizationId: string, userId?: string, role?: string) {
     const where: any = { organizationId };
 
+    // Only scope to individual user for SALES_REP
     if (role === 'SALES_REP' && userId) {
-      where.ownerId = userId;
-    } else if (role === 'SALES_MANAGER' && userId) {
-    
       where.ownerId = userId;
     }
 
@@ -271,21 +269,17 @@ export class DashboardRepository {
     if (role === 'SALES_REP') {
       const wonDeals = deals.filter((d) => d.stage === 'WON');
       const wonValue = wonDeals.reduce((sum, d) => sum + d.value.toNumber(), 0);
-      const wonCount = wonDeals.length;
       const totalValue = deals.reduce((sum, d) => sum + d.value.toNumber(), 0);
-      const avgDealSize = deals.length > 0 ? totalValue / deals.length : 0;
 
       return [
         {
-          userId: userId,
-          firstName: 'You' as any,
-          lastName: '' as any,
+          userId,
           totalDeals: deals.length,
-          wonDeals: wonCount,
-          wonValue: wonValue,
+          wonDeals: wonDeals.length,
+          wonValue,
           totalPipelineValue: totalValue,
-          avgDealSize: avgDealSize,
-          conversionRate: deals.length > 0 ? (wonCount / deals.length) * 100 : 0,
+          avgDealSize: deals.length > 0 ? totalValue / deals.length : 0,
+          conversionRate: deals.length > 0 ? (wonDeals.length / deals.length) * 100 : 0,
         },
       ];
     }
@@ -306,27 +300,27 @@ export class DashboardRepository {
       grouped[ownerId].deals.push(deal);
     }
 
-    const result = Object.values(grouped).map((user: any) => {
-      const wonDeals = user.deals.filter((d: any) => d.stage === 'WON');
-      const wonValue = wonDeals.reduce((sum: number, d: any) => sum + d.value.toNumber(), 0);
-      const totalValue = user.deals.reduce((sum: number, d: any) => sum + d.value.toNumber(), 0);
+    return Object.values(grouped)
+      .map((user: any) => {
+        const wonDeals = user.deals.filter((d: any) => d.stage === 'WON');
+        const wonValue = wonDeals.reduce((sum: number, d: any) => sum + d.value.toNumber(), 0);
+        const totalValue = user.deals.reduce((sum: number, d: any) => sum + d.value.toNumber(), 0);
 
-      return {
-        userId: user.userId,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        totalDeals: user.deals.length,
-        wonDeals: wonDeals.length,
-        wonValue: wonValue,
-        totalPipelineValue: totalValue,
-        avgDealSize: user.deals.length > 0 ? totalValue / user.deals.length : 0,
-        conversionRate:
-          user.deals.length > 0 ? (wonDeals.length / user.deals.length) * 100 : 0,
-      };
-    });
-
-    return result.sort((a, b) => b.wonValue - a.wonValue);
+        return {
+          userId: user.userId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          totalDeals: user.deals.length,
+          wonDeals: wonDeals.length,
+          wonValue,
+          totalPipelineValue: totalValue,
+          avgDealSize: user.deals.length > 0 ? totalValue / user.deals.length : 0,
+          conversionRate:
+            user.deals.length > 0 ? (wonDeals.length / user.deals.length) * 100 : 0,
+        };
+      })
+      .sort((a, b) => b.wonValue - a.wonValue);
   }
 
 
