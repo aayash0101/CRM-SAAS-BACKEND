@@ -18,12 +18,13 @@ router.post('/', activitiesController.createActivity.bind(activitiesController))
 
 router.get('/:id', activitiesController.getActivityById.bind(activitiesController));
 
-router.patch('/:id', activitiesController.updateActivity.bind(activitiesController));
-
+// ── /:id/status must come before /:id for PATCH ───────────────────────────
 router.patch(
   '/:id/status',
   activitiesController.updateActivityStatus.bind(activitiesController)
 );
+
+router.patch('/:id', activitiesController.updateActivity.bind(activitiesController));
 
 router.delete(
   '/:id',
