@@ -247,7 +247,6 @@ export class DashboardRepository {
   async getSalesPerformance(organizationId: string, userId?: string, role?: string) {
     const where: any = { organizationId };
 
-    // Only scope to individual user for SALES_REP
     if (role === 'SALES_REP' && userId) {
       where.ownerId = userId;
     }
@@ -322,7 +321,6 @@ export class DashboardRepository {
       })
       .sort((a, b) => b.wonValue - a.wonValue);
   }
-
 
   async getOverviewData(organizationId: string, userId?: string, role?: string) {
     const [totalLeads, totalCustomers, openDeals, pipelineValue, leadStats, dealStats, activityStats] =
